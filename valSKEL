@@ -1,0 +1,133 @@
+#ifndef VAL_H
+#define VAL_H
+
+#include <string>
+#include<algorithm> 
+using namespace std;
+
+class Val {
+    int        i;
+    string    s;
+    enum ValType { ISINT, ISSTR, ISERR } vt;
+    
+public:
+    Val() : i(0), vt(ISERR) {}
+    Val(int i) : i(i), vt(ISINT) {}
+    Val(string s) : i(0), s(s), vt(ISSTR) {}
+    Val(ValType vt, string errmsg) : i(0), s(errmsg), vt(ISERR) {}
+    
+    ValType getVt() const { return vt; }
+    
+    bool isErr() const { return vt == ISERR; }
+    bool isInt() const { return vt == ISINT; }
+    bool isStr() const { return vt == ISSTR; }
+    
+    int ValInt() const {
+        if( isInt() ) return i;
+        throw "This Val is not an Int";
+    }
+    string ValString() const {
+        if( isStr() ) return s;
+        throw "This Val is not a Str";
+    }
+    
+    friend ostream& operator<<(ostream& out, const Val& v) {
+        if (v.isInt())
+            out << v.ValInt();
+        else if (v.isStr())
+           out << v.ValString() ;
+        return out;
+    }
+    
+    string GetErrMsg() const {
+        if( isErr() ) return s;
+        throw "This Val is not an Error";
+    }
+   
+    Val operator+(const Val& op) const {
+        if( isInt() && op.isInt() )
+            return Val(ValInt() + op.ValInt());
+        if( isStr() && op.isStr() )
+            return Val(ValString() + op.ValString());
+        return Val(ISERR, "Type mismatch on operands of +");
+    }
+    
+    Val operator-(const Val& op) const {
+        if( isInt() && op.isInt() )
+            return Val(ValInt() - op.ValInt());
+        return Val(ISERR, "Type mismatch on operands of -");
+    }
+    
+    Val operator*(const Val& op) const {
+        if( isInt() && op.isInt() )
+            return Val(ValInt() * op.ValInt());
+        if (isInt() && op.isStr())
+        {
+            if (ValInt() < 0) 
+            {
+                return Val(ISERR,"Cannot multiply string by negative int");                
+            }
+            return Val(mul(op.ValString(),ValInt()));
+        }
+        if (isStr() && op.isInt() )
+        {
+            if (op.ValInt() < 0) 
+            {
+                return Val(ISERR,"Cannot multiply string by negative int"); 
+            }
+            return Val(mul(ValString(),op.ValInt()));
+        }
+        return Val(ISERR, "Type mismatch on operands of *");
+    }
+    
+    Val operator/(const Val& op) const {
+         if( isInt() && op.isInt() )
+         {
+            if (op.ValInt() == 0) { 
+                return Val(ISERR,"Divide by zero error");
+            } 
+            return Val(ValInt() / op.ValInt());
+        
+         }
+        return Val(ISERR, "Type mismatch on operands of /");
+    }
+    
+    Val operator!() const {
+        if (isInt())
+        {
+            int num = ValInt(), reverseInt = 0, remainder;
+            while(num != 0)
+            {
+                remainder = num%10;
+                reverseInt = reverseInt*10 + remainder;
+                num /=10;
+            }
+            return Val(reverseInt);
+        }
+        if (isStr())
+        {
+           string temp = ValString();
+           reverseStr(temp);
+           return Val(temp);
+        }
+        return Val(ISERR, "Type mismatch on operands of !");
+    }
+private:
+    static string mul(string a, int b) {
+        string result;
+
+        for(int i = 0; i < b; ++i){
+            result += a;
+        }
+        return result;
+    }
+    static void reverseStr(string& str) 
+    { 
+    int len = str.length(); 
+
+    for (int i = 0; i < len / 2; i++) 
+        swap(str[i], str[len - i - 1]); 
+    }
+};
+
+#endif
